@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    networks:
+      - legal-net
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: legal_user
+      POSTGRES_PASSWORD: secret_password
+      POSTGRES_DB: legal_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    command: ["-c", "config_file=/etc/postgresql/postgresql.conf"]
+
+networks:
+  legal-net:
+    driver: bridge
