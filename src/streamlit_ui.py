@@ -16,7 +16,7 @@ settings = Config.from_yaml("config.yaml")
 
 # Настройка страницы
 st.set_page_config(
-    page_title="Юридическая RAG система",
+    page_title="LawerGPT",
     page_icon="⚖️",
     layout="wide",
     initial_sidebar_state="expanded"
