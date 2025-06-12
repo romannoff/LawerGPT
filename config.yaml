@@ -3,10 +3,11 @@ model: 'Qwen2.5-7B-AWQ'
 password: 'password'  # так делать плохо
 rag_settings:
   mode: 'standard'
+  answer_temperature: 0.7
   router_enable: True
   router_temperature: 0.7
   db_enable: True
-  chunk_count: 5
+  chunk_count: 10
   reranker_enable: True
   reranker_temperature: 0.5
   chain_of_thoughts: False
