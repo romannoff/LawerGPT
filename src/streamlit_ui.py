@@ -48,21 +48,52 @@ def update_settings():
         st.session_state.rag_agent.set_settings(**st.session_state.settings)
         logger.info(f"Settings updated: {st.session_state.settings}")
 
+def dump_chats():
+    with open('chats.pl', 'wb') as f:
+        pickle.dump(st.session_state.chats, f)
+
+# Функции для работы с чатами
+def create_new_chat():
+    chat_id = str(uuid.uuid4())
+    logger.info("NEW CHAT: %s" % (chat_id,))
+    st.session_state.chats[chat_id] = {
+        'id': chat_id,
+        'name': f"Чат {len(st.session_state.chats) + 1}",
+        'created_at': datetime.now(),
+        'messages': []
+    }
+    st.session_state.chat_id = chat_id
+    st.session_state.settings['chat_id'] = chat_id
+    dump_chats()
+
+def delete_chat(chat_id):
+    if chat_id in st.session_state.chats:
+        if st.session_state.current_chat_id != chat_id:
+            del st.session_state.chats[chat_id]
+            st.session_state.history_db.delete_messages_by_chat_id(chat_id)
+            dump_chats()
+
+def clear_chat_history():
+    cid = st.session_state.current_chat_id
+    if cid:
+        st.session_state.chats[cid]['messages'] = []
+        st.session_state.history_db.delete_messages_by_chat_id(chat_id)
 
 
 # Инициализация session state
 if 'user_input' not in st.session_state:
     st.session_state['user_input'] = ""
+if 'settings' not in st.session_state:
+    st.session_state.settings = load_settings()
 if 'chats' not in st.session_state:
     if os.path.exists('chats.pl'):
         with open('chats.pl', 'rb') as f:
             st.session_state.chats = pickle.load(f)
     else:
         st.session_state.chats = {}
+        create_new_chat()
 if 'current_chat_id' not in st.session_state:
     st.session_state.current_chat_id = None
-if 'settings' not in st.session_state:
-    st.session_state.settings = load_settings()
 if 'rag_agent' not in st.session_state:
     st.session_state.rag_agent = RagAgent(**st.session_state.settings)
 
@@ -98,37 +129,6 @@ textarea.custom-textarea {
 </style>
 """, unsafe_allow_html=True)
 
-def dump_chats():
-    with open('chats.pl', 'wb') as f:
-        pickle.dump(st.session_state.chats, f)
-
-# Функции для работы с чатами
-def create_new_chat():
-    chat_id = str(uuid.uuid4())
-    logger.info("NEW CHAT: %s" % (chat_id,))
-    st.session_state.chats[chat_id] = {
-        'id': chat_id,
-        'name': f"Чат {len(st.session_state.chats) + 1}",
-        'created_at': datetime.now(),
-        'messages': []
-    }
-    st.session_state.chat_id = chat_id
-    st.session_state.settings['chat_id'] = chat_id
-    dump_chats()
-
-def delete_chat(chat_id):
-    if chat_id in st.session_state.chats:
-        if st.session_state.current_chat_id != chat_id:
-            del st.session_state.chats[chat_id]
-            st.session_state.history_db.delete_messages_by_chat_id(chat_id)
-            dump_chats()
-
-def clear_chat_history():
-    cid = st.session_state.current_chat_id
-    if cid:
-        st.session_state.chats[cid]['messages'] = []
-        st.session_state.history_db.delete_messages_by_chat_id(chat_id)
-
 # Функция обработки ввода
 def process_input():
     q = st.session_state['user_input'].strip()
@@ -153,8 +153,7 @@ def process_input():
 # Левая боковая панель
 with st.sidebar:
     if st.button("➕ Новый чат", use_container_width=True):
-        if st.session_state.chats == {}:
-            create_new_chat()
+        create_new_chat()
         st.rerun()
 
     st.markdown("---")
@@ -251,6 +250,10 @@ with col_settings:
             st.rerun()
 
     with st.expander("Настройки разработчика", expanded=False):
+        st.slider("Температура ответа",
+                      0.0, 1.0, st.session_state.settings['answer_temperature'], step=0.1,
+                      key="answer_temperature",
+                      on_change=update_settings)
         st.checkbox("Включить роутер",
                     value=st.session_state.settings['router_enable'],
                     key="router_enable",
