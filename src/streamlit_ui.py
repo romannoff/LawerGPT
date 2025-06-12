@@ -175,7 +175,7 @@ with st.sidebar:
 col_main, col_settings = st.columns([3, 1])
 
 with col_main:
-    st.markdown("## ⚖️ Юридическая RAG система")
+    st.markdown("## ⚖️ LawerGPT")
 
     if not st.session_state.current_chat_id:
         if not st.session_state.chats:
