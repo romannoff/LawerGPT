@@ -45,7 +45,7 @@ class HistoryBase:
         
     def get_messages(self, chat_id: str, limit=None):
         logger.info("GET MESSAGES: chat_id: %s limit: %s" % (chat_id, limit))
-        query = self.history.select().where(self.history.c.chat_id == chat_id)
+        query = self.history.select().where(self.history.c.chat_id == str(chat_id))
         if limit is not None:
             query = query.limit(limit)
         with self.engine.connect() as conn:
