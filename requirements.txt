@@ -11,6 +11,7 @@ numpy==2.2.6
 openai==1.82.0
 pandas==2.2.3
 pydantic==2.11.5
+psycopg2-binary==2.9.10
 qdrant-client==1.14.2
 sentence-transformers==4.1.0
 SQLAlchemy==2.0.41
