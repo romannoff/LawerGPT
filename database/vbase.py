@@ -12,6 +12,7 @@ import pickle
 from tqdm import tqdm
 
 from database.psql_base import PostgresBase
+from src.logging_conf import logger
 
 
 class ConstitutionArticle(TypedDict):
@@ -67,7 +68,6 @@ class QdrantLegalRAG:
         """
         self.client = QdrantClient(host=host, port=port, timeout=timeout)
         self.encoder = SentenceTransformer('BAAI/bge-m3', device='cpu')
-        
         # Коллекции
         self.constitution_collection = f"{collection_prefix}_constitution"
         self.codes_collection = f"{collection_prefix}_codes"
@@ -96,11 +96,13 @@ class QdrantLegalRAG:
             self.laws_collection
         ]
         
+        is_empty_base = False
+
         for collection_name in collections:
             try:
                 # Проверяем, существует ли коллекция
                 self.client.get_collection(collection_name)
-                print(f"Коллекция {collection_name} уже существует")
+                logger.info(f"Коллекция {collection_name} уже существует")
             except:
                 self.client.create_collection(
                     collection_name=collection_name,
@@ -109,7 +111,31 @@ class QdrantLegalRAG:
                         distance=Distance.COSINE
                     )
                 )
-                print(f"Создана коллекция {collection_name}")
+                logger.info(f"Создана коллекция {collection_name}")
+                is_empty_base = True
+        if is_empty_base:
+            self.fill_base()
+    
+    def fill_base(self,):
+        with open('data/contitution_articles.pickle', 'rb') as f:
+            constitution_articles = pickle.load(f)
+
+        with open('data/codes_articles.pickle', 'rb') as f:
+            codes_articles = pickle.load(f)
+        with open('data/codes_articles_2.pickle', 'rb') as f:
+            codes_articles += pickle.load(f)
+
+        with open('data/law_articles.pickle', 'rb') as f:
+            laws_articles = pickle.load(f)
+        with open('data/law_articles_2.pickle', 'rb') as f:
+            laws_articles += pickle.load(f)
+        
+        logger.info("Заполнение векторной базы данных")
+
+        # Добавление данных
+        rag_system.add_constitution_articles(constitution_articles)
+        rag_system.add_codes_articles(codes_articles)
+        rag_system.add_laws_articles(laws_articles)
     
     def _create_embeddings(self, text: str, is_query: bool = False) -> np.ndarray:
         """
